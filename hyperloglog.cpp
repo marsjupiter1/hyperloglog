@@ -4,6 +4,7 @@
 #include <ctime>
 #include <cstring>
 #include <cassert>
+#include "murmur3.h"
 
 class RandomNumberGenerator
 {
@@ -115,7 +116,6 @@ typedef struct __attribute__((__packed__))
 } IntHash;
 
 typedef unsigned char maxzero_t;
-extern const double alphas[18];
 
 class HyperLogLog
 {
@@ -129,16 +129,14 @@ public:
     maxzero_t maxZeros[0];
     static void IntHash_IntHash(IntHash &me);
     static int IntHash_mostSignificantBits(IntHash &me, uint32_t key, int nBits);
-    static maxzero_t IntHash_countLeadingZeros(IntHash &me, uint32_t toCount);
+    static maxzero_t IntHash_countLeadingZeros(uint32_t toCount);
     static maxzero_t IntHash_leadingZeros(IntHash &me, uint32_t key);
     static void setsize(HyperLogLog *&old_ptr, int needed);
     static void setP(HyperLogLog *&bitmap_ptr, int newP);
     static void addDatum(HyperLogLog *&bitmap_ptr, const long datum);
     static HyperLogLog *init(int count);
     long double estimateCardinality();
-    static HyperLogLog *parse_json(cJSON *data);
-
-
+  
     // interface
     HyperLogLog *copy();
     void setAlpha(int &newP);
@@ -180,9 +178,8 @@ int HyperLogLog::IntHash_mostSignificantBits(IntHash &me, uint32_t key, int nBit
     return (int)(hash[3] >> (32 - nBits));
 }
 
-maxzero_t HyperLogLog::IntHash_countLeadingZeros(IntHash &me, uint32_t toCount)
+maxzero_t HyperLogLog::IntHash_countLeadingZeros(uint32_t toCount)
 {
-    UNUSED(me);
     int count = 0;
     for (int i = 0; i < 8; i++)
     {
@@ -197,16 +194,16 @@ maxzero_t HyperLogLog::IntHash_leadingZeros(IntHash &me, uint32_t key)
 {
     uint32_t hash[4];
     MurmurHash3_x64_128(&key, sizeof(key), me.seed, hash);
-    int count = HyperLogLog::IntHash_countLeadingZeros(me, hash[0]);
+    int count = HyperLogLog::IntHash_countLeadingZeros( hash[0]);
     if (count != 8)
         return count;
-    count = HyperLogLog::IntHash_countLeadingZeros(me, hash[1]);
+    count = HyperLogLog::IntHash_countLeadingZeros(hash[1]);
     if (count != 8)
         return count + 8;
-    count = HyperLogLog::IntHash_countLeadingZeros(me, hash[2]);
+    count = HyperLogLog::IntHash_countLeadingZeros( hash[2]);
     if (count != 8)
         return count + 16;
-    count = HyperLogLog::IntHash_countLeadingZeros(me, hash[3]);
+    count = HyperLogLog::IntHash_countLeadingZeros( hash[3]);
     return count + 24;
 }
 
@@ -215,7 +212,7 @@ void HyperLogLog::setsize(HyperLogLog *&old_ptr, int needed)
 
     if (needed > old_ptr->allocated)
     {
-        HyperLogLog *new_ptr = HyperLogLog::init(session_ptr, needed);
+        HyperLogLog *new_ptr = HyperLogLog::init( needed);
 
         memcpy(new_ptr, old_ptr, sizeof(HyperLogLog) + old_ptr->count * sizeof(maxzero_t));
         new_ptr->allocated = needed;
@@ -240,11 +237,11 @@ void HyperLogLog::setP(HyperLogLog *&bitmap_ptr, int newP)
     bitmap_ptr->p = newP;
     bitmap_ptr->m = pow(2, newP);
  
-    bitmap_ptr->setAlpha(session_ptr, newP);
+    bitmap_ptr->setAlpha( newP);
  
     if (bitmap_ptr->m > bitmap_ptr->count)
     {
-        HyperLogLog::setsize(session_ptr, bitmap_ptr, bitmap_ptr->m);
+        HyperLogLog::setsize( bitmap_ptr, bitmap_ptr->m);
         for (int i = bitmap_ptr->count; i < bitmap_ptr->m; i++)
         {
             bitmap_ptr->maxZeros[i] = 0;
@@ -308,7 +305,7 @@ long double HyperLogLog::estimateCardinality()
     }
 }
 
-void HyperLogLog::Union(HyperLogLog *bitmap_ptr)
+void HyperLogLog::Union(HyperLogLog *&bitmap_ptr)
 {
 
     assert(bitmap_ptr->count == this->count);
@@ -335,7 +332,7 @@ HyperLogLog *HyperLogLog::copy()
 HyperLogLog *HyperLogLog::SetUnion(HyperLogLog *&datum)
 {
     assert(datum->count == count);
-    HyperLogLog *retVal = HyperLogLog::init(session_ptr, count);
+    HyperLogLog *retVal = HyperLogLog::init(count);
     memcpy(retVal, datum, sizeof(HyperLogLog) + datum->count * sizeof(maxzero_t));
 
     for (auto i = 0; i < count; i++)
@@ -347,12 +344,12 @@ HyperLogLog *HyperLogLog::SetUnion(HyperLogLog *&datum)
 
 unsigned long HyperLogLog::magnitudeIntersection(HyperLogLog *&datum)
 {
-    long double A = estimateCardinality(session_ptr);
+    long double A = estimateCardinality();
 
-    long double B = datum->estimateCardinality(session_ptr);
+    long double B = datum->estimateCardinality();
 
-    HyperLogLog *setunion = this->SetUnion(session_ptr, datum);
-    unsigned long AuB = setunion->estimateCardinality(session_ptr);
+    HyperLogLog *setunion = this->SetUnion( datum);
+    unsigned long AuB = setunion->estimateCardinality();
     free(setunion);
     return A + B - AuB;
 }
