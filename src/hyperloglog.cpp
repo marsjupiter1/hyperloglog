@@ -6,41 +6,12 @@
 #include <cassert>
 #include "murmur3.h"
 #include "RandomNumberGenerator.h"
+#include "HyperLogLog.h"
 
 using namespace std;
 
-typedef unsigned char maxzero_t;
 
-class HyperLogLog
-{
-public:
-    int32_t allocated;
-    int32_t count;
-    IntHash hash;
-    int p;
-    int m;
-    double alpha;
-    maxzero_t maxZeros[0];
-    static void IntHash_IntHash(IntHash &me);
-    static int IntHash_mostSignificantBits(IntHash &me, uint32_t key, int nBits);
-    static maxzero_t IntHash_countLeadingZeros(uint32_t toCount);
-    static maxzero_t IntHash_leadingZeros(IntHash &me, uint32_t key);
-    static void setsize(HyperLogLog *&old_ptr, int needed);
-    static void setP(HyperLogLog *&bitmap_ptr, int newP);
-    static void addDatum(HyperLogLog *&bitmap_ptr, const long datum);
-    static HyperLogLog *init(int count);
-    long double estimateCardinality();
-  
-    // interface
-    HyperLogLog *copy();
-    void setAlpha(int &newP);
-    void Union(HyperLogLog *&to);
-    unsigned long magnitudeIntersection(HyperLogLog *&datum);
-    void add(HyperLogLog *&to_ptr);
-    HyperLogLog *SetUnion(HyperLogLog *&datum);
-    
-   
-  } __attribute__((__packed__));
+
 
 static const double alphas[18] =
     {0, 0.351193943305104, 0.532434616688025, 0.625608716971165,
@@ -168,7 +139,7 @@ HyperLogLog *HyperLogLog::init(int count)
 
     payload->count = 0;
     payload->allocated = count;
-
+  
     IntHash_IntHash(payload->hash);
 
     return payload;

@@ -18,6 +18,7 @@ public:
     RandomSet(unsigned long StartNumber,unsigned long NumElements,unsigned long NumUniqueElements)
     {
         startNumber = StartNumber;
+        numElements = NumElements;
         numUniqueElements = NumUniqueElements;
         elementSet = (unsigned long *) malloc((numElements+numUniqueElements)*sizeof(unsigned long));
         

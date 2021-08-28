@@ -40,10 +40,5 @@ private:
     uint64_t seeds[16];
 };
 
-typedef struct __attribute__((__packed__))
-{
-    uint32_t seed;
-
-} IntHash;
 
 #endif // RANDOMNUMBERGENERATOR_H
