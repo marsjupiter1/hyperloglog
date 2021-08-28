@@ -29,6 +29,7 @@ void HyperLogLog::IntHash_IntHash(IntHash &me)
 #ifndef MAKETEST
     uint32_t max = ~0;
     me.seed = RandomNumberGenerator::getInstance().getRandomInt(max);
+     me.seed = 0;
 #else
     me.seed = 0;
 #endif

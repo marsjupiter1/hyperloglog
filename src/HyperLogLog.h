@@ -19,6 +19,13 @@ private:
     int p;
     int m;
     double alpha;
+    //
+    // this is a bit of a naughty trick
+    // that allows us to allocate the class with a single
+    // allocation and copy the class with a single memcpy
+    // in other languages with sensible bounds checking
+    // you'd need to be a bit more sensible.
+    //
     maxzero_t maxZeros[0];
     static void IntHash_IntHash(IntHash &me);
     static int IntHash_mostSignificantBits(IntHash &me, uint32_t key, int nBits);

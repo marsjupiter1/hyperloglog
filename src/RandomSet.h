@@ -20,18 +20,18 @@ public:
         startNumber = StartNumber;
         numElements = NumElements;
         numUniqueElements = NumUniqueElements;
-        elementSet = (unsigned long *) malloc((numElements+numUniqueElements)*sizeof(unsigned long));
+        elementSet = (unsigned long *) malloc((numElements*2-numUniqueElements)*sizeof(unsigned long));
         
     // Create the set of unique elements to use
    		 for(auto i = startNumber; i < numUniqueElements + startNumber; i++)
          {
-         		elementSet[i - startNumber]=i;
+         		elementSet[i]=i +startNumber;
          }
 
    	 // Create duplicates
     	for(auto i = 0; i < numElements - numUniqueElements; i++)
     	{
-        	elementSet[i+numElements] = elementSet[RandomNumberGenerator::getInstance().getRandomInt(0,numUniqueElements-1)];
+        	elementSet[i+numUniqueElements] = elementSet[RandomNumberGenerator::getInstance().getRandomInt(0,numUniqueElements-1)];
 		}
     // shuffle
         for(auto i = 0; i < numElements + numUniqueElements; i++)
