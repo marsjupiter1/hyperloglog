@@ -25,7 +25,7 @@ public:
     // Create the set of unique elements to use
    		 for(auto i = startNumber; i < numUniqueElements + startNumber; i++)
          {
-         		elementSet[i]=i +startNumber;
+         		elementSet[i- startNumber]=i ;
          }
 
    	 // Create duplicates
