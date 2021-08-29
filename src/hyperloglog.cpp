@@ -23,16 +23,16 @@ int HyperLogLog::IntHash_mostSignificantBits(uint32_t *datum_hash, int nBits)
 maxzero_t HyperLogLog::IntHash_leadingZeros(uint32_t *datum_hash)
 {
     int count = __builtin_clz(datum_hash[0]);
-    if (count != 8)
+    if (count != 32)
         return count;
     count = __builtin_clz(datum_hash[1]);
-    if (count != 8)
-        return count + 8;
+    if (count != 32)
+        return count + 32;
     count = __builtin_clz(datum_hash[2]);
-    if (count != 8)
-        return count + 16;
+    if (count != 32)
+        return count + 64;
     count = __builtin_clz(datum_hash[3]);
-    return count + 24;
+    return count + 96;
 }
 
 // We can overload this according to data type
