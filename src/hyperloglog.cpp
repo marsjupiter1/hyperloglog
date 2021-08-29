@@ -6,11 +6,10 @@
 #include <cstdio>
 #include <cassert>
 #include "murmur3.h"
-#include "RandomNumberGenerator.h"
+
 #include "HyperLogLog.h"
 
 using namespace std;
-
 
 #define HASHSEED 0
 
@@ -24,12 +23,9 @@ static const double alphas[18] =
 
 };
 
-
-int HyperLogLog::IntHash_mostSignificantBits( uint32_t *datum_hash, int nBits)
+int HyperLogLog::IntHash_mostSignificantBits(uint32_t *datum_hash, int nBits)
 {
-
     assert(nBits <= 32);
- 
     return (int)(datum_hash[3] >> (32 - nBits));
 }
 
@@ -45,35 +41,19 @@ maxzero_t HyperLogLog::IntHash_countLeadingZeros(uint32_t toCount)
     return count;
 }
 
-maxzero_t HyperLogLog::IntHash_leadingZeros( uint32_t *datum_hash)
+maxzero_t HyperLogLog::IntHash_leadingZeros(uint32_t *datum_hash)
 {
-   
-    int count = HyperLogLog::IntHash_countLeadingZeros( datum_hash[0]);
+    int count = HyperLogLog::IntHash_countLeadingZeros(datum_hash[0]);
     if (count != 8)
         return count;
     count = HyperLogLog::IntHash_countLeadingZeros(datum_hash[1]);
     if (count != 8)
         return count + 8;
-    count = HyperLogLog::IntHash_countLeadingZeros( datum_hash[2]);
+    count = HyperLogLog::IntHash_countLeadingZeros(datum_hash[2]);
     if (count != 8)
         return count + 16;
-    count = HyperLogLog::IntHash_countLeadingZeros( datum_hash[3]);
+    count = HyperLogLog::IntHash_countLeadingZeros(datum_hash[3]);
     return count + 24;
-}
-
-void HyperLogLog::setsize(HyperLogLog *&old_ptr, int needed)
-{
-
-    if (needed > old_ptr->allocated)
-    {
-        HyperLogLog *new_ptr = HyperLogLog::init( needed);
-
-        memcpy(new_ptr, old_ptr, sizeof(HyperLogLog) + old_ptr->count * sizeof(maxzero_t));
-        new_ptr->allocated = needed;
-        free(old_ptr);
-        old_ptr = new_ptr;
-        //printf("new size %ld\n", new_ptr->allocated* sizeof(maxzero_t));
-    }
 }
 
 void HyperLogLog::setAlpha(int &newP)
@@ -87,53 +67,30 @@ void HyperLogLog::setAlpha(int &newP)
     alpha = alphas[newP];
 }
 
-void HyperLogLog::setKeyBitCount(HyperLogLog *&bitmap_ptr, int newP)
-{
-    bitmap_ptr->KeyBitCount = newP;
-    bitmap_ptr->KeyArraySize = pow(2, newP);
- 
-    bitmap_ptr->setAlpha( newP);
- 
-    if (bitmap_ptr->KeyArraySize > bitmap_ptr->count)
-    {
-        HyperLogLog::setsize( bitmap_ptr, bitmap_ptr->KeyArraySize);
-        for (int i = bitmap_ptr->count; i < bitmap_ptr->KeyArraySize; i++)
-        {
-            bitmap_ptr->maxZeros[i] = 0;
-        }
-        bitmap_ptr->count = bitmap_ptr->KeyArraySize;
-    }
-}
-
 void HyperLogLog::addDatum(HyperLogLog *&bitmap_ptr, const long datum)
 {
-  
+
     uint32_t hash[4];
     MurmurHash3_x64_128(&datum, sizeof(datum), HASHSEED, hash);
 
-    int index = IntHash_mostSignificantBits( hash, bitmap_ptr->KeyBitCount);
+    int index = IntHash_mostSignificantBits(hash, bitmap_ptr->KeyBitCount);
 
     assert(index >= 0);
-    // ensure we are big enough to hold the new index
-    HyperLogLog::setsize(bitmap_ptr, index);
-    bitmap_ptr->maxZeros[index] = max(bitmap_ptr->maxZeros[index], (maxzero_t)(HyperLogLog::IntHash_leadingZeros( hash) + 1));
-    if (index >= bitmap_ptr->count)
-    {
-
-        bitmap_ptr->count = index + 1;
-    }
+    bitmap_ptr->maxZeros[index] = max(bitmap_ptr->maxZeros[index], (maxzero_t)(HyperLogLog::IntHash_leadingZeros(hash) + 1));
 }
 
-HyperLogLog *HyperLogLog::init(int count)
+HyperLogLog *HyperLogLog::init(int keybitcount)
 {
-    int size = sizeof(HyperLogLog) + count * sizeof(maxzero_t);
+    int keySize = pow(2, keybitcount);
+
+    int size = sizeof(HyperLogLog) + keySize * sizeof(maxzero_t);
     HyperLogLog *bitmap_ptr = (HyperLogLog *)malloc(size);
 
-    assert(count >= 0);
+    assert(keybitcount >= 1);
+    bitmap_ptr->KeyBitCount = keybitcount;
+    bitmap_ptr->KeyArraySize = keySize;
+    bitmap_ptr->setAlpha(keybitcount);
 
-    bitmap_ptr->count = 0;
-    bitmap_ptr->allocated = count;
-  
     return bitmap_ptr;
 }
 
@@ -142,7 +99,7 @@ long double HyperLogLog::estimateCardinality()
     long double sum = 0;
     unsigned int totalZeros = 0;
     maxzero_t z;
-    for (int i = 0; i < count; i++)
+    for (int i = 0; i < KeyArraySize; i++)
     {
         z = maxZeros[i];
         sum += pow(2, -((double)z));
@@ -165,34 +122,33 @@ long double HyperLogLog::estimateCardinality()
 void HyperLogLog::Union(HyperLogLog *&bitmap_ptr)
 {
 
-    assert(bitmap_ptr->count == this->count);
+    assert(bitmap_ptr->KeyBitCount == this->KeyBitCount);
 
     this->add(bitmap_ptr);
 }
 
 void HyperLogLog::add(HyperLogLog *&to_ptr)
 {
-    for (auto i = 0; i < count; i++)
+    for (auto i = 0; i < KeyArraySize; i++)
     {
         to_ptr->maxZeros[i] = max(to_ptr->maxZeros[i], maxZeros[i]);
     }
-    to_ptr->count = count;
 }
 
 HyperLogLog *HyperLogLog::copy()
 {
-    HyperLogLog *to = HyperLogLog::init(allocated);
-    memcpy(to, this, sizeof(HyperLogLog) + sizeof(maxzero_t) * allocated);
+    HyperLogLog *to = HyperLogLog::init(KeyBitCount);
+    memcpy(to, this, sizeof(HyperLogLog) + sizeof(maxzero_t) * pow(2, KeyBitCount));
     return to;
 }
 
 HyperLogLog *HyperLogLog::setUnion(HyperLogLog *&datum)
 {
-    assert(datum->count == count);
-    HyperLogLog *retVal = HyperLogLog::init(count);
-    memcpy(retVal, datum, sizeof(HyperLogLog) + datum->count * sizeof(maxzero_t));
+    assert(datum->KeyBitCount == KeyBitCount);
+    HyperLogLog *retVal = HyperLogLog::init(KeyBitCount);
+    memcpy(retVal, datum, sizeof(HyperLogLog) + datum->KeyArraySize * sizeof(maxzero_t));
 
-    for (auto i = 0; i < count; i++)
+    for (auto i = 0; i < KeyArraySize; i++)
     {
         retVal->maxZeros[i] = max(retVal->maxZeros[i], maxZeros[i]);
     }
@@ -204,7 +160,7 @@ unsigned long HyperLogLog::magnitudeIntersection(HyperLogLog *&datum)
     long double A = estimateCardinality();
     long double B = datum->estimateCardinality();
 
-    HyperLogLog *setunion = this->setUnion( datum);
+    HyperLogLog *setunion = this->setUnion(datum);
     unsigned long AuB = setunion->estimateCardinality();
     free(setunion);
     return A + B - AuB;

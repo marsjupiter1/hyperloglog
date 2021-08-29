@@ -13,8 +13,7 @@ typedef struct __attribute__((__packed__))
 class HyperLogLog
 {
 private:
-    int32_t allocated;
-    int32_t count;
+
     int KeyBitCount;
     int KeyArraySize;
     double alpha;
@@ -30,18 +29,16 @@ private:
     static int IntHash_mostSignificantBits(  uint32_t *datum_hash, int nBits);
     static maxzero_t IntHash_countLeadingZeros(uint32_t toCount);
     static maxzero_t IntHash_leadingZeros(  uint32_t *datum_hash);
-    static void setsize(HyperLogLog *&old_ptr, int needed);
     void setAlpha(int &newBitCount);
   
     
 public:
     // interface
-    static HyperLogLog *init(int32_t count);
+    static HyperLogLog *init(int32_t keybitcount);
     static void addDatum(HyperLogLog *&bitmap_ptr, const long datum);
     HyperLogLog *copy();
     void Union(HyperLogLog *&to);
-    static void setKeyBitCount(HyperLogLog *&bitmap_ptr, int newP);
-
+  
     unsigned long magnitudeIntersection(HyperLogLog *&datum);
     void add(HyperLogLog *&to_ptr);
     HyperLogLog *setUnion(HyperLogLog *&datum);
