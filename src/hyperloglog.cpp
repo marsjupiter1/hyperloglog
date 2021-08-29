@@ -1,4 +1,3 @@
-
 #include <cmath>
 #include <algorithm> // std::max
 #include <ctime>
@@ -6,67 +5,37 @@
 #include <cstdio>
 #include <cassert>
 #include "murmur3.h"
-
 #include "HyperLogLog.h"
 
 using namespace std;
 
 #define HASHSEED 0
 
-static const double alphas[18] =
-    {0, 0.351193943305104, 0.532434616688025, 0.625608716971165,
-     0.673102032011193, 0.697122649688705, 0.709208485323602,
-     0.715271255627600, 0.718307770416137, 0.719827413209098,
-     0.720587757723026, 0.720968410691135, 0.721159556732532,
-     0.721256733328830, 0.721308519914072, 0.721340807633915,
-     0.721369740077220
-
-};
-
+// from the hash take some bits to make a bucket index
 int HyperLogLog::IntHash_mostSignificantBits(uint32_t *datum_hash, int nBits)
 {
     assert(nBits <= 32);
     return (int)(datum_hash[3] >> (32 - nBits));
 }
 
-maxzero_t HyperLogLog::IntHash_countLeadingZeros(uint32_t toCount)
-{
-    int count = 0;
-    for (int i = 0; i < 8; i++)
-    {
-        if (((toCount >> i) & 1) == 0)
-            return count;
-        count++;
-    }
-    return count;
-}
-
+// get the leading 0's
+// https://www.foonathan.net/2016/02/implementation-challenge-2/
 maxzero_t HyperLogLog::IntHash_leadingZeros(uint32_t *datum_hash)
 {
-    int count = HyperLogLog::IntHash_countLeadingZeros(datum_hash[0]);
+    int count = __builtin_clz(datum_hash[0]);
     if (count != 8)
         return count;
-    count = HyperLogLog::IntHash_countLeadingZeros(datum_hash[1]);
+    count = __builtin_clz(datum_hash[1]);
     if (count != 8)
         return count + 8;
-    count = HyperLogLog::IntHash_countLeadingZeros(datum_hash[2]);
+    count = __builtin_clz(datum_hash[2]);
     if (count != 8)
         return count + 16;
-    count = HyperLogLog::IntHash_countLeadingZeros(datum_hash[3]);
+    count = __builtin_clz(datum_hash[3]);
     return count + 24;
 }
 
-void HyperLogLog::setAlpha(int &newP)
-{
-    if (newP > 16)
-    {
-        alpha = 0.72136974007722; // It doesn't get much more accurate with higher p
-        return;
-    }
-
-    alpha = alphas[newP];
-}
-
+// We can overload this according to data type
 void HyperLogLog::addDatum(HyperLogLog *&bitmap_ptr, const long datum)
 {
 
@@ -82,15 +51,13 @@ void HyperLogLog::addDatum(HyperLogLog *&bitmap_ptr, const long datum)
 HyperLogLog *HyperLogLog::init(int keybitcount)
 {
     int keySize = pow(2, keybitcount);
-
     int size = sizeof(HyperLogLog) + keySize * sizeof(maxzero_t);
     HyperLogLog *bitmap_ptr = (HyperLogLog *)malloc(size);
 
     assert(keybitcount >= 1);
     bitmap_ptr->KeyBitCount = keybitcount;
     bitmap_ptr->KeyArraySize = keySize;
-    bitmap_ptr->setAlpha(keybitcount);
-
+   
     return bitmap_ptr;
 }
 
@@ -111,7 +78,7 @@ long double HyperLogLog::estimateCardinality()
 
     if (totalZeros == 0)
     {
-        return (long double)alpha * (long double)pow(KeyArraySize, 2) / sum;
+        return (long double)0;
     }
     else
     {
@@ -121,9 +88,7 @@ long double HyperLogLog::estimateCardinality()
 
 void HyperLogLog::Union(HyperLogLog *&bitmap_ptr)
 {
-
     assert(bitmap_ptr->KeyBitCount == this->KeyBitCount);
-
     this->add(bitmap_ptr);
 }
 

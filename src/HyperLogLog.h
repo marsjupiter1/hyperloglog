@@ -16,7 +16,6 @@ private:
 
     int KeyBitCount;
     int KeyArraySize;
-    double alpha;
     //
     // this is a bit of a naughty trick
     // that allows us to allocate the class with a single
@@ -27,10 +26,7 @@ private:
     maxzero_t maxZeros[0];
     static void IntHash_IntHash(IntHash &me);
     static int IntHash_mostSignificantBits(  uint32_t *datum_hash, int nBits);
-    static maxzero_t IntHash_countLeadingZeros(uint32_t toCount);
-    static maxzero_t IntHash_leadingZeros(  uint32_t *datum_hash);
-    void setAlpha(int &newBitCount);
-  
+     static maxzero_t IntHash_leadingZeros(  uint32_t *datum_hash);
     
 public:
     // interface
