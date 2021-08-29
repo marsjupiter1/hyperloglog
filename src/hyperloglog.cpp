@@ -25,13 +25,12 @@ static const double alphas[18] =
 };
 
 
-int HyperLogLog::IntHash_mostSignificantBits( uint32_t key, int nBits)
+int HyperLogLog::IntHash_mostSignificantBits( uint32_t *datum_hash, int nBits)
 {
 
     assert(nBits <= 32);
-    uint32_t hash[4];
-    MurmurHash3_x64_128(&key, sizeof(key), HASHSEED, hash);
-    return (int)(hash[3] >> (32 - nBits));
+ 
+    return (int)(datum_hash[3] >> (32 - nBits));
 }
 
 maxzero_t HyperLogLog::IntHash_countLeadingZeros(uint32_t toCount)
@@ -46,20 +45,19 @@ maxzero_t HyperLogLog::IntHash_countLeadingZeros(uint32_t toCount)
     return count;
 }
 
-maxzero_t HyperLogLog::IntHash_leadingZeros( uint32_t key)
+maxzero_t HyperLogLog::IntHash_leadingZeros( uint32_t *datum_hash)
 {
-    uint32_t hash[4];
-    MurmurHash3_x64_128(&key, sizeof(key), HASHSEED, hash);
-    int count = HyperLogLog::IntHash_countLeadingZeros( hash[0]);
+   
+    int count = HyperLogLog::IntHash_countLeadingZeros( datum_hash[0]);
     if (count != 8)
         return count;
-    count = HyperLogLog::IntHash_countLeadingZeros(hash[1]);
+    count = HyperLogLog::IntHash_countLeadingZeros(datum_hash[1]);
     if (count != 8)
         return count + 8;
-    count = HyperLogLog::IntHash_countLeadingZeros( hash[2]);
+    count = HyperLogLog::IntHash_countLeadingZeros( datum_hash[2]);
     if (count != 8)
         return count + 16;
-    count = HyperLogLog::IntHash_countLeadingZeros( hash[3]);
+    count = HyperLogLog::IntHash_countLeadingZeros( datum_hash[3]);
     return count + 24;
 }
 
@@ -109,13 +107,16 @@ void HyperLogLog::setKeyBitCount(HyperLogLog *&bitmap_ptr, int newP)
 
 void HyperLogLog::addDatum(HyperLogLog *&bitmap_ptr, const long datum)
 {
-    uint32_t key = datum;
-    int index = IntHash_mostSignificantBits( key, bitmap_ptr->KeyBitCount);
+  
+    uint32_t hash[4];
+    MurmurHash3_x64_128(&datum, sizeof(datum), HASHSEED, hash);
+
+    int index = IntHash_mostSignificantBits( hash, bitmap_ptr->KeyBitCount);
 
     assert(index >= 0);
     // ensure we are big enough to hold the new index
     HyperLogLog::setsize(bitmap_ptr, index);
-    bitmap_ptr->maxZeros[index] = max(bitmap_ptr->maxZeros[index], (maxzero_t)(HyperLogLog::IntHash_leadingZeros( key) + 1));
+    bitmap_ptr->maxZeros[index] = max(bitmap_ptr->maxZeros[index], (maxzero_t)(HyperLogLog::IntHash_leadingZeros( hash) + 1));
     if (index >= bitmap_ptr->count)
     {
 

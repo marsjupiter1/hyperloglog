@@ -27,9 +27,9 @@ private:
     //
     maxzero_t maxZeros[0];
     static void IntHash_IntHash(IntHash &me);
-    static int IntHash_mostSignificantBits( uint32_t key, int nBits);
+    static int IntHash_mostSignificantBits(  uint32_t *datum_hash, int nBits);
     static maxzero_t IntHash_countLeadingZeros(uint32_t toCount);
-    static maxzero_t IntHash_leadingZeros( uint32_t key);
+    static maxzero_t IntHash_leadingZeros(  uint32_t *datum_hash);
     static void setsize(HyperLogLog *&old_ptr, int needed);
     void setAlpha(int &newBitCount);
   
