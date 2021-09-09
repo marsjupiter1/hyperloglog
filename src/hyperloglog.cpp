@@ -63,13 +63,11 @@ HyperLogLog *HyperLogLog::init(int keybitcount)
 
 long double HyperLogLog::estimateCardinality()
 {
-    long double sum = 0;
     unsigned int totalZeros = 0;
     maxzero_t z;
     for (int i = 0; i < KeyArraySize; i++)
     {
         z = maxZeros[i];
-        sum += pow(2, -((double)z));
         if (z == 0)
         {
             totalZeros++;
