@@ -89,15 +89,17 @@ long double HyperLogLog::estimateCardinality()
 	for(int i=0; i< KeyArraySize; i++)
 	{
 		z = maxZeros[i];
+        //printf(" %d ",z);
 		sum += pow(2, -((double )z));
 		if(z== 0)
 		{
 			totalZeros++;
 		}
 	}
-
+    //printf("zeros %d key array size %d sum %Lf\n",totalZeros,KeyArraySize,sum);
 	if(totalZeros == 0)
 	{
+        
 		return (long double)alpha * (long double)pow(KeyArraySize, 2) / sum;
 	}
 	else
