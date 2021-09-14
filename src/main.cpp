@@ -5,8 +5,8 @@
 #include <stdlib.h>
 
 // how many numbers to place in the bitmap and how many will be different
-#define SAMPLESIZE 300
-#define UNIQUES 100
+#define SAMPLESIZE 3000
+#define UNIQUES 700
 // the dataset we create will be keyed into buckets on this
 // number of bits, so will be 2^BITS long
 // a smaller number of bits will be less accurate

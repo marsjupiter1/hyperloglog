@@ -16,6 +16,7 @@ private:
 
     int KeyBitCount;
     int KeyArraySize;
+    double alpha;
     //
     // this is a bit of a naughty trick
     // that allows us to allocate the class with a single

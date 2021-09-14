@@ -11,6 +11,16 @@ using namespace std;
 
 #define HASHSEED 0
 
+const double alphas[18] =
+{0, 0.351193943305104, 0.532434616688025, 0.625608716971165,
+	0.673102032011193, 0.697122649688705, 0.709208485323602,
+	0.715271255627600, 0.718307770416137, 0.719827413209098,
+	0.720587757723026, 0.720968410691135, 0.721159556732532,
+	0.721256733328830, 0.721308519914072, 0.721340807633915,
+	0.721369740077220
+
+};
+
 // from the hash take some bits to make a bucket index
 int HyperLogLog::IntHash_mostSignificantBits(uint32_t *datum_hash, int nBits)
 {
@@ -57,31 +67,43 @@ HyperLogLog *HyperLogLog::init(int keybitcount)
     assert(keybitcount >= 1);
     bitmap_ptr->KeyBitCount = keybitcount;
     bitmap_ptr->KeyArraySize = keySize;
+
+    if(keybitcount > 16)
+	{
+		bitmap_ptr->alpha = 0.72136974007722; // It doesn't get much more accurate with higher p
+		
+	}else{
+        bitmap_ptr->alpha = alphas[keybitcount];
+    }
+
+	
    
     return bitmap_ptr;
 }
 
 long double HyperLogLog::estimateCardinality()
 {
-    unsigned int totalZeros = 0;
-    maxzero_t z;
-    for (int i = 0; i < KeyArraySize; i++)
-    {
-        z = maxZeros[i];
-        if (z == 0)
-        {
-            totalZeros++;
-        }
-    }
+	long double sum = 0;
+	unsigned int totalZeros = 0;
+	maxzero_t z;
+	for(int i=0; i< KeyArraySize; i++)
+	{
+		z = maxZeros[i];
+		sum += pow(2, -((double )z));
+		if(z== 0)
+		{
+			totalZeros++;
+		}
+	}
 
-    if (totalZeros == 0)
-    {
-        return (long double)0;
-    }
-    else
-    {
-        return (long double)KeyArraySize * log((double)KeyArraySize / (double)totalZeros);
-    }
+	if(totalZeros == 0)
+	{
+		return (long double)alpha * (long double)pow(KeyArraySize, 2) / sum;
+	}
+	else
+	{
+		return (long double)KeyArraySize*log((double)KeyArraySize/(double)totalZeros);
+	}
 }
 
 void HyperLogLog::Union(HyperLogLog *&bitmap_ptr)
