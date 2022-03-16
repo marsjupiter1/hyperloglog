@@ -96,7 +96,7 @@ long double HyperLogLog::estimateCardinality()
 			totalZeros++;
 		}
 	}
-    //printf("zeros %d key array size %d sum %Lf\n",totalZeros,KeyArraySize,sum);
+   // printf("zeros %d key array size %d sum %Lf\n",totalZeros,KeyArraySize,sum);
 	if(totalZeros == 0)
 	{
         

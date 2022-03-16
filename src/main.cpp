@@ -5,16 +5,16 @@
 #include <stdlib.h>
 
 // how many numbers to place in the bitmap and how many will be different
-#define SAMPLESIZE 3000
-#define UNIQUES 1000
+#define SAMPLESIZE 30000
+#define UNIQUES 10000
 // the dataset we create will be keyed into buckets on this
 // number of bits, so will be 2^BITS long
 // a smaller number of bits will be less accurate
 // but more memory efficient
-#define BITS 7
+#define BITS 8
 // play with the overlap of the datasets
 #define SET1STARTNUMBER 0
-#define SET2STARTNUMBER 20
+#define SET2STARTNUMBER 4000
 
 int main(int args, char **argc)
 {
